@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>admaker — AI short-form ad generator</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --panel: #161922;
+    --panel-2: #1d212c;
+    --line: #2a2f3d;
+    --text: #e8eaf0;
+    --muted: #949bad;
+    --accent: #ffe44d;
+    --accent-dim: #6b6224;
+    --ok: #4ade80;
+    --err: #f87171;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: var(--accent); }
+  header {
+    padding: 26px 24px 18px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  }
+  header h1 { margin: 0; font-size: 21px; letter-spacing: -0.02em; }
+  header .tag { color: var(--muted); font-size: 13px; }
+  main {
+    max-width: 1180px; margin: 0 auto; padding: 24px;
+    display: grid; grid-template-columns: minmax(0,1.35fr) minmax(0,1fr); gap: 24px;
+  }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 20px;
+  }
+  .card h2 { margin: 0 0 4px; font-size: 15px; letter-spacing: .01em; }
+  .card .hint { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 5px; }
+  input, select, textarea {
+    width: 100%; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 11px; font: inherit; font-size: 14px;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-dim); border-color: transparent; }
+  textarea { resize: vertical; min-height: 68px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .presets { display: grid; gap: 10px; }
+  .preset {
+    border: 1px solid var(--line); background: var(--panel-2); border-radius: 10px;
+    padding: 12px 14px; cursor: pointer; transition: border-color .12s, background .12s;
+  }
+  .preset:hover { border-color: #3c4356; }
+  .preset.on { border-color: var(--accent); background: #21221a; }
+  .preset .name { font-weight: 600; font-size: 14px; }
+  .preset .desc { color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+  details { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 12px; }
+  summary { cursor: pointer; font-size: 13.5px; color: var(--muted); }
+  summary:hover { color: var(--text); }
+  .stage { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-top: 12px; }
+  .stage h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .badge {
+    display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .06em;
+    padding: 2px 6px; border-radius: 4px; margin-left: 7px; vertical-align: 1px;
+  }
+  .badge.free { background: #14532d; color: #86efac; }
+  .badge.freemium { background: #422006; color: #fcd34d; }
+  .badge.paid { background: #3b1d3b; color: #f0abfc; }
+  .meta { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  button.go {
+    width: 100%; margin-top: 20px; padding: 13px; font-size: 15px; font-weight: 650;
+    background: var(--accent); color: #1a1705; border: 0; border-radius: 10px; cursor: pointer;
+  }
+  button.go:disabled { background: #3a3a2c; color: #7d7a63; cursor: not-allowed; }
+  .bar { height: 8px; background: var(--panel-2); border-radius: 99px; overflow: hidden; margin: 14px 0 8px; }
+  .bar > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .35s ease; }
+  .status { font-size: 13.5px; color: var(--muted); min-height: 20px; }
+  .status.err { color: var(--err); }
+  video { width: 100%; max-width: 320px; border-radius: 12px; display: block; margin: 4px auto 0; background: #000; }
+  .warn { color: #fbbf24; font-size: 13px; margin-top: 8px; }
+  .tags { margin-top: 12px; font-size: 13px; color: var(--muted); word-break: break-word; }
+  .dl {
+    display: inline-block; margin-top: 12px; padding: 9px 16px; background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 8px; text-decoration: none; font-size: 14px;
+  }
+  pre {
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px; overflow: auto; font-size: 12px; max-height: 320px; color: var(--muted);
+  }
+  .keynote { font-size: 12px; color: var(--muted); margin-top: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>admaker</h1>
+  <span class="tag">AI product ads for TikTok · Reels · Shorts — 1080×1920, captioned, ready to post</span>
+</header>
+
+<main>
+  <div>
+    <div class="card">
+      <h2>What are you advertising?</h2>
+      <p class="hint">The more specific you are, the less generic the ad.</p>
+
+      <label for="product">Product name</label>
+      <input id="product" placeholder="Nomad Brew" />
+
+      <label for="description">What it actually is</label>
+      <textarea id="description" placeholder="A collapsible silicone pour-over coffee dripper that folds flat."></textarea>
+
+      <div class="row">
+        <div>
+          <label for="audience">Who it's for</label>
+          <input id="audience" placeholder="Campers and commuters" />
+        </div>
+        <div>
+          <label for="cta">Call to action</label>
+          <input id="cta" placeholder="Get yours at nomadbrew.co" />
+        </div>
+      </div>
+
+      <label for="points">Selling points (one per line)</label>
+      <textarea id="points" placeholder="Folds flat into any pocket&#10;Brews a real cup in 90 seconds&#10;No paper filters ever again"></textarea>
+
+      <div class="row">
+        <div>
+          <label for="tone">Tone</label>
+          <input id="tone" value="energetic" />
+        </div>
+        <div>
+          <label for="language">Language</label>
+          <input id="language" value="English" />
+        </div>
+      </div>
+
+      <label for="style">Visual direction</label>
+      <input id="style" value="cinematic product photography, soft studio light, shallow depth of field" />
+
+      <div class="row">
+        <div>
+          <label for="platform">Platform</label>
+          <select id="platform"></select>
+        </div>
+        <div>
+          <label for="scenes">Scenes</label>
+          <select id="scenes">
+            <option>3</option><option>4</option><option selected>5</option>
+            <option>6</option><option>7</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Choose your stack</h2>
+      <p class="hint">Start free. Upgrade only the part you want better.</p>
+      <div class="presets" id="presets"></div>
+
+      <details id="advanced">
+        <summary>Advanced — pick providers and paste API keys</summary>
+        <div id="stages"></div>
+        <p class="keynote">
+          Keys are sent to your own local server, held in memory for this job only,
+          and never written to disk. A key already set in the environment is used
+          automatically — leave the field blank.
+        </p>
+      </details>
+
+      <details>
+        <summary>Look and feel</summary>
+        <div class="row">
+          <div>
+            <label for="accent">Caption highlight</label>
+            <input id="accent" type="color" value="#ffe44d" style="height:38px;padding:4px" />
+          </div>
+          <div>
+            <label for="transition">Transition</label>
+            <select id="transition">
+              <option value="fade" selected>Crossfade</option>
+              <option value="slideleft">Slide left</option>
+              <option value="slideup">Slide up</option>
+              <option value="circleopen">Circle open</option>
+              <option value="none">Hard cut</option>
+            </select>
+          </div>
+        </div>
+        <label for="music">Background music file (path on this machine, optional)</label>
+        <input id="music" placeholder="/path/to/music.mp3" />
+      </details>
+
+      <button class="go" id="go">Generate ad</button>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <h2>Result</h2>
+      <div class="bar"><i id="bar"></i></div>
+      <div class="status" id="status">Fill in the product and hit generate.</div>
+      <div id="out"></div>
+    </div>
+    <div class="card" id="sbcard" style="display:none">
+      <h2>Storyboard</h2>
+      <p class="hint">What the model wrote, scene by scene.</p>
+      <pre id="storyboard"></pre>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let META = null;
+let PRESET = "free";
+
+async function boot() {
+  META = await (await fetch("/api/meta")).json();
+
+  $("platform").innerHTML = META.platforms
+    .map((p) => `<option value="${p.key}"${p.key === "universal" ? " selected" : ""}>${p.label}</option>`)
+    .join("");
+
+  $("presets").innerHTML = META.presets
+    .map((p) => `<div class="preset${p.key === PRESET ? " on" : ""}" data-key="${p.key}">
+      <div class="name">${p.label}</div>
+      <div class="desc">${p.description}</div>
+    </div>`).join("");
+  document.querySelectorAll(".preset").forEach((el) => {
+    el.onclick = () => {
+      PRESET = el.dataset.key;
+      document.querySelectorAll(".preset").forEach((o) => o.classList.toggle("on", o === el));
+      renderStages();
+    };
+  });
+
+  renderStages();
+}
+
+function presetFor(key) {
+  return META.presets.find((p) => p.key === key) || {};
+}
+
+function renderStages() {
+  const preset = presetFor(PRESET);
+  const stages = [
+    ["script", "Script", "Writes the hook, the beats and the call to action"],
+    ["image", "Visuals", "One still per scene, animated with a slow push-in"],
+    ["tts", "Voiceover", "Reads the script; its length sets the pacing"],
+    ["video", "True video (optional)", "Replaces the stills with generated motion — the expensive option"],
+  ];
+  $("stages").innerHTML = stages.map(([kind, title, blurb]) => {
+    const list = META.providers[kind] || [];
+    const chosen = preset[kind] || "";
+    const opts = [`<option value="">${chosen ? "Preset: " + chosen : "None"}</option>`]
+      .concat(list.map((p) => `<option value="${p.name}">${p.label}</option>`)).join("");
+    return `<div class="stage">
+      <h3>${title}</h3>
+      <div class="meta">${blurb}</div>
+      <label for="${kind}_provider">Provider</label>
+      <select id="${kind}_provider" data-kind="${kind}">${opts}</select>
+      <div id="${kind}_info" class="meta"></div>
+      <div id="${kind}_key_wrap" style="display:none">
+        <label for="${kind}_key">API key</label>
+        <input id="${kind}_key" type="password" placeholder="Paste key, or leave blank to use the environment" />
+      </div>
+      <div id="${kind}_model_wrap" style="display:none">
+        <label for="${kind}_model">Model</label>
+        <select id="${kind}_model"></select>
+      </div>
+      <div id="${kind}_voice_wrap" style="display:none">
+        <label for="${kind}_voice">Voice</label>
+        <select id="${kind}_voice"></select>
+      </div>
+    </div>`;
+  }).join("");
+
+  stages.forEach(([kind]) => {
+    const sel = $(`${kind}_provider`);
+    sel.onchange = () => updateStage(kind);
+    updateStage(kind);
+  });
+}
+
+function updateStage(kind) {
+  const preset = presetFor(PRESET);
+  const name = $(`${kind}_provider`).value || preset[kind] || "";
+  const info = (META.providers[kind] || []).find((p) => p.name === name);
+  const infoEl = $(`${kind}_info`);
+
+  if (!info) {
+    infoEl.innerHTML = "";
+    ["key", "model", "voice"].forEach((f) => ($(`${kind}_${f}_wrap`).style.display = "none"));
+    return;
+  }
+
+  const hasEnv = info.env_var && META.env_keys[info.env_var];
+  infoEl.innerHTML =
+    `<span class="badge ${info.tier}">${info.tier}</span> ${info.cost}` +
+    (info.notes ? `<br>${info.notes}` : "") +
+    (info.requires_key
+      ? `<br>${hasEnv ? "✓ key found in environment" : "Key required"} —
+         <a href="${info.signup_url}" target="_blank" rel="noopener">get one</a>`
+      : "<br>✓ no account needed");
+
+  $(`${kind}_key_wrap`).style.display = info.requires_key ? "" : "none";
+
+  const modelWrap = $(`${kind}_model_wrap`);
+  if (info.models && info.models.length > 1) {
+    modelWrap.style.display = "";
+    $(`${kind}_model`).innerHTML =
+      `<option value="">Default (${info.default_model || info.models[0]})</option>` +
+      info.models.map((m) => `<option value="${m}">${m}</option>`).join("");
+  } else modelWrap.style.display = "none";
+
+  const voiceWrap = $(`${kind}_voice_wrap`);
+  if (info.voices && info.voices.length) {
+    voiceWrap.style.display = "";
+    $(`${kind}_voice`).innerHTML =
+      `<option value="">Default</option>` +
+      info.voices.map((v) => `<option value="${v}">${v}</option>`).join("");
+  } else voiceWrap.style.display = "none";
+}
+
+function stagePayload(kind) {
+  const el = $(`${kind}_provider`);
+  if (!el) return {};
+  return {
+    provider: el.value || null,
+    api_key: ($(`${kind}_key`) || {}).value || null,
+    model: ($(`${kind}_model`) || {}).value || null,
+    voice: ($(`${kind}_voice`) || {}).value || null,
+  };
+}
+
+function setStatus(text, isError) {
+  const el = $("status");
+  el.textContent = text;
+  el.classList.toggle("err", !!isError);
+}
+
+$("go").onclick = async () => {
+  const product = $("product").value.trim();
+  if (!product) { setStatus("Give the product a name first.", true); return; }
+
+  $("go").disabled = true;
+  $("out").innerHTML = "";
+  $("sbcard").style.display = "none";
+  $("bar").style.width = "0%";
+  setStatus("Starting…");
+
+  const body = {
+    product,
+    description: $("description").value.trim(),
+    audience: $("audience").value.trim(),
+    call_to_action: $("cta").value.trim(),
+    key_points: $("points").value.split("\n").map((s) => s.trim()).filter(Boolean),
+    tone: $("tone").value.trim() || "energetic",
+    language: $("language").value.trim() || "English",
+    visual_style: $("style").value.trim(),
+    scene_count: parseInt($("scenes").value, 10),
+    platform: $("platform").value,
+    preset: PRESET,
+    caption_accent: $("accent").value,
+    transition: $("transition").value,
+    music_path: $("music").value.trim() || null,
+    script: stagePayload("script"),
+    image: stagePayload("image"),
+    tts: stagePayload("tts"),
+    video: stagePayload("video"),
+  };
+
+  let job;
+  try {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    job = await res.json();
+    if (!res.ok) throw new Error(job.detail || "Request rejected");
+  } catch (err) {
+    setStatus("Could not start: " + err.message, true);
+    $("go").disabled = false;
+    return;
+  }
+
+  poll(job.id);
+};
+
+async function poll(id) {
+  try {
+    const job = await (await fetch(`/api/jobs/${id}`)).json();
+    $("bar").style.width = (job.progress * 100).toFixed(1) + "%";
+    setStatus(job.message, job.status === "error");
+
+    if (job.status === "done") {
+      $("go").disabled = false;
+      const r = job.result || {};
+      const tags = (r.storyboard?.hashtags || []).map((h) => "#" + h).join(" ");
+      $("out").innerHTML =
+        `<video src="${job.video_url}" controls playsinline></video>
+         <a class="dl" href="${job.video_url}" download>Download MP4 (${(r.duration || 0).toFixed(1)}s)</a>
+         ${tags ? `<div class="tags">${tags}</div>` : ""}
+         ${(r.warnings || []).map((w) => `<div class="warn">! ${w}</div>`).join("")}`;
+      if (r.storyboard) {
+        $("sbcard").style.display = "";
+        $("storyboard").textContent = JSON.stringify(r.storyboard, null, 2);
+      }
+      return;
+    }
+    if (job.status === "error") {
+      $("go").disabled = false;
+      setStatus(job.error || "Generation failed", true);
+      return;
+    }
+    setTimeout(() => poll(id), 900);
+  } catch (err) {
+    setStatus("Lost contact with the server: " + err.message, true);
+    $("go").disabled = false;
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
