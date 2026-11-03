@@ -9,7 +9,6 @@ reportable, and it keeps any single ffmpeg command small enough to debug.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Sequence

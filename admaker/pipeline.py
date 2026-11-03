@@ -22,7 +22,6 @@ from .providers import (
     TTS,
     VIDEO,
     ImageProvider,
-    ProviderError,
     ScriptProvider,
     TTSProvider,
     VideoProvider,

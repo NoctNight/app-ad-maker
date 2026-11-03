@@ -6,8 +6,6 @@ same `Storyboard`, so the rest of the app never learns which model wrote it.
 
 from __future__ import annotations
 
-import json
-import random
 from typing import Any
 
 from ..models import Brief, Scene, Storyboard
@@ -120,7 +118,7 @@ def _fallback_storyboard(brief: Brief) -> Storyboard:
         )
     )
     return Storyboard(
-        hook=f"You are doing this the hard way.",
+        hook="You are doing this the hard way.",
         scenes=[s.sanitized() for s in scenes[: brief.scene_count]],
         cta=cta,
         hashtags=[

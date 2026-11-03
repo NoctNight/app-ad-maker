@@ -328,7 +328,7 @@ class OfflineTTS(TTSProvider):
         run(
             [
                 "-f", "lavfi",
-                "-i", f"anullsrc=channel_layout=stereo:sample_rate=44100",
+                "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
                 "-t", f"{seconds:.3f}",
                 "-c:a", "libmp3lame", "-q:a", "6",
                 str(out_path),
