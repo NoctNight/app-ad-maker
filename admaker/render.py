@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 from . import ass_subs, ffmpeg
 from .ass_subs import CaptionCue, cues_for_scene
@@ -36,10 +36,6 @@ class SceneTiming:
     duration: float
     narration_start: float
     narration_duration: float
-
-
-def _noop(_message: str, _fraction: float) -> None:
-    pass
 
 
 # --------------------------------------------------------------------------

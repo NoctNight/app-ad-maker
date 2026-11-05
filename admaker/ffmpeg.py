@@ -105,15 +105,3 @@ def escape_filter_path(path: str | Path) -> str:
     for ch in (":", "'", "[", "]", ",", ";"):
         text = text.replace(ch, "\\" + ch)
     return text
-
-
-def has_filter(name: str) -> bool:
-    """Check whether this ffmpeg build exposes a given filter."""
-    proc = subprocess.run(
-        [ffmpeg_path(), "-hide_banner", "-filters"],
-        capture_output=True,
-        text=True,
-        timeout=60,
-        check=False,
-    )
-    return bool(re.search(rf"^\s*\S+\s+{re.escape(name)}\s", proc.stdout, re.MULTILINE))

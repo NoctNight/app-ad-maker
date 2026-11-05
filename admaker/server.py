@@ -128,7 +128,7 @@ def meta() -> dict[str, Any]:
             for p in _unique_platforms()
         ],
         "presets": [
-            {"key": k, **{kk: vv for kk, vv in v.items()}} for k, v in PRESETS.items()
+            {"key": k, **v} for k, v in PRESETS.items()
         ],
         "providers": {
             kind: [i.to_dict() for i in list_providers(kind)]

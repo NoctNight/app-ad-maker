@@ -149,7 +149,7 @@ class Scene:
     video_path: str | None = None  # set when a true text-to-video model is used
     duration: float = 0.0
 
-    def sanitized(self) -> "Scene":
+    def sanitized(self) -> Scene:
         self.narration = _clean_text(self.narration)
         self.caption = _clean_text(self.caption)
         self.image_prompt = _clean_text(self.image_prompt)
@@ -172,7 +172,7 @@ class Storyboard:
         return asdict(self)
 
     @classmethod
-    def from_llm_json(cls, raw: str) -> "Storyboard":
+    def from_llm_json(cls, raw: str) -> Storyboard:
         """Parse a model response into a storyboard, tolerating chatty output."""
         data = _extract_json_object(raw)
         scenes_raw = data.get("scenes") or []
