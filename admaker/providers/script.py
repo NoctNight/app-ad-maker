@@ -62,6 +62,8 @@ Rules:
 - Scene 1 is the hook: lead with the problem or a bold claim, never a greeting.
 - The middle scenes each land ONE benefit. Be specific, not adjectival.
 - The last scene drives the call to action.
+- Never invent facts the brief doesn't give: no prices, statistics, ratings, \
+awards, guarantees or customer counts. Sell with what you were told.
 - Total narration must read aloud in about {seconds:.0f} seconds \
 (roughly {int(seconds * 2.4)} words across all scenes).
 - image_prompt describes a PHOTOGRAPH: subject, setting, lighting, camera \

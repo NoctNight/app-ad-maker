@@ -74,7 +74,13 @@ def load_dotenv(path: str | Path = ".env") -> None:
             continue
         key, _, value = line.partition("=")
         key = key.strip()
-        value = value.strip().strip("'").strip('"')
+        value = value.strip()
+        if value[:1] in {"'", '"'} and value.count(value[0]) >= 2:
+            value = value[1 : value.index(value[0], 1)]
+        else:
+            # Drop inline comments ("KEY=   # note"), which .env.example uses.
+            value = value.split(" #", 1)[0].split("\t#", 1)[0]
+            value = "" if value.startswith("#") else value.strip()
         if key and key not in os.environ:
             os.environ[key] = value
 

@@ -48,6 +48,24 @@ python -m admaker serve      # http://127.0.0.1:8000
 
 ---
 
+## Use it as an agent skill
+
+This repo is also an [Agent Skill](https://agentskills.io): `SKILL.md` tells
+Claude Code, Codex, Cursor and other skill-aware agents how to gather a
+brief, pick a stack without spending money unasked, and run the tool.
+
+```bash
+# Claude Code (personal skills)
+git clone https://github.com/NoctNight/app-ad-maker ~/.claude/skills/app-ad-maker
+```
+
+Then ask your agent for "a TikTok ad for my app". On first use,
+`scripts/admaker.sh` installs everything into a private `.venv` inside the
+skill folder. Keys are read from your environment or a `.env` in the
+directory you're working in.
+
+---
+
 ## Picking a stack
 
 | Preset | What it uses | Cost | Signups |

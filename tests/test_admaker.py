@@ -271,3 +271,23 @@ def test_offline_pipeline_produces_a_playable_ad(tmp_path):
     assert result.duration <= PLATFORMS["universal"].max_seconds
     assert (Path(result.workdir) / "storyboard.json").exists()
     assert (Path(result.workdir) / "captions.ass").exists()
+
+
+def test_dotenv_ignores_inline_comments(tmp_path, monkeypatch):
+    from admaker.config import load_dotenv
+
+    env = tmp_path / ".env"
+    env.write_text(
+        "BLANK_KEY=            # free tier https://example.com\n"
+        "SET_KEY=abc123  # note\n"
+        'QUOTED_KEY="has # hash"\n',
+        encoding="utf-8",
+    )
+    for name in ("BLANK_KEY", "SET_KEY", "QUOTED_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    load_dotenv(env)
+    import os
+
+    assert os.environ["BLANK_KEY"] == ""
+    assert os.environ["SET_KEY"] == "abc123"
+    assert os.environ["QUOTED_KEY"] == "has # hash"
